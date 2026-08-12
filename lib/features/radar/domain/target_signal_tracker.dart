@@ -63,7 +63,8 @@ class TargetSignalTracker {
     required DateTime capturedAt,
     required TimedHeading heading,
   }) {
-    final skew = capturedAt.difference(heading.capturedAt).abs();
+    final delta = capturedAt.difference(heading.capturedAt);
+    final skew = delta.isNegative ? -delta : delta;
     if (skew > syncTolerance) return false;
 
     accumulator.add(headingDegrees: heading.degrees, rssi: rssi);
@@ -156,8 +157,4 @@ class TargetSignalTracker {
       _candidateSector = null;
     }
   }
-}
-
-extension on Duration {
-  Duration abs() => isNegative ? -this : this;
 }

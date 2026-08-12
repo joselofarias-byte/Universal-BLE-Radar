@@ -50,6 +50,24 @@ class RadarMath {
   }
 }
 
+class SectorEstimate {
+  const SectorEstimate({
+    required this.sector,
+    required this.rssi,
+    required this.confidence,
+    required this.sampleCount,
+    required this.marginDb,
+  });
+
+  final int sector;
+  final double rssi;
+  final double confidence;
+  final int sampleCount;
+  final double marginDb;
+
+  bool get isLockCandidate => confidence >= 0.7 && marginDb >= 3.0;
+}
+
 class SectorRssiAccumulator {
   SectorRssiAccumulator({
     this.alpha = RadarMath.defaultEmaAlpha,
@@ -93,18 +111,36 @@ class SectorRssiAccumulator {
     return List<int>.unmodifiable(_windows[sector]);
   }
 
-  int? strongestSector() {
-    int? best;
-    double? bestValue;
+  int? strongestSector() => strongestEstimate()?.sector;
+
+  SectorEstimate? strongestEstimate() {
+    final ranked = <({int sector, double rssi})>[];
     for (var i = 0; i < _ema.length; i++) {
       final value = _ema[i];
-      if (value == null) continue;
-      if (bestValue == null || value > bestValue) {
-        best = i;
-        bestValue = value;
+      if (value != null) {
+        ranked.add((sector: i, rssi: value));
       }
     }
-    return best;
+    if (ranked.isEmpty) return null;
+
+    ranked.sort((a, b) => b.rssi.compareTo(a.rssi));
+    final best = ranked.first;
+    final second = ranked.length > 1 ? ranked[1].rssi : best.rssi - 12.0;
+    final marginDb = (best.rssi - second).clamp(0.0, 12.0);
+    final sampleCount = _windows[best.sector].length;
+
+    final sampleConfidence = (sampleCount / windowSize).clamp(0.0, 1.0);
+    final marginConfidence = (marginDb / 6.0).clamp(0.0, 1.0);
+    final confidence =
+        (sampleConfidence * 0.55 + marginConfidence * 0.45).clamp(0.0, 1.0);
+
+    return SectorEstimate(
+      sector: best.sector,
+      rssi: best.rssi,
+      confidence: confidence,
+      sampleCount: sampleCount,
+      marginDb: marginDb,
+    );
   }
 
   void _validateSector(int sector) {

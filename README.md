@@ -1,6 +1,8 @@
-# SignalRadar / Universal BLE Radar — JoseloFarias fork
+# SignalRadar
 
-Proyecto Android/Flutter mantenido por **JoseloFarias** para detección, análisis y localización heurística de dispositivos Bluetooth Low Energy mediante intensidad de señal y sensores del teléfono.
+**SignalRadar** es un proyecto Android/Flutter mantenido por **JoseloFarias** para detección, análisis y localización heurística de dispositivos Bluetooth Low Energy mediante intensidad de señal y sensores del teléfono.
+
+El proyecto evolucionó a partir de `erogluyusuf/Universal-BLE-Radar`, pero su desarrollo actual tiene identidad, objetivos, arquitectura y evolución propias. Se conserva deliberadamente la genealogía Git para mantener trazabilidad técnica, autoría y atribución del proyecto de origen.
 
 ## Meta
 
@@ -10,15 +12,19 @@ Convertir el escaneo BLE en una herramienta práctica de localización: seleccio
 
 - Escaneo BLE continuo mediante una capa desacoplada.
 - Clasificación de proximidad por RSSI.
-- Suavizado y análisis de tendencia para reducir ruido.
-- Fusión de señal con magnetómetro/sensores de movimiento.
-- Radar sectorial y seguimiento de un dispositivo objetivo.
+- Suavizado EMA y análisis de tendencia para reducir ruido.
+- Radar sectorial de 16 sectores de 22,5°.
+- Ventana de muestras por sector y selección de señal dominante.
+- Fusión de señal con magnetómetro y sensores de movimiento.
+- Seguimiento de un dispositivo objetivo.
 - Feedback visual y háptico durante la búsqueda.
 - Privacidad local y ausencia de telemetría innecesaria.
 
 ## Estado
 
-**Desarrollo activo.** El objetivo es avanzar el algoritmo, la precisión y la UX de búsqueda en cada ciclo, además de mantener compatibilidad y builds.
+**Desarrollo activo.** SignalRadar ya incorpora lógica propia de radar sectorial, clasificación de proximidad y procesamiento de señal, y continúa avanzando en precisión, fusión de sensores, UX y validación sobre dispositivos reales.
+
+La CI valida análisis estático, tests y generación de APK Android.
 
 ## Desarrollo
 
@@ -31,9 +37,18 @@ flutter test
 flutter build apk
 ```
 
-## Origen y licencia
+## Origen, genealogía y licencia
 
-Fork basado en `erogluyusuf/Universal-BLE-Radar`. Se conservan las atribuciones y licencia del proyecto original; consulte `LICENSE` y el historial Git.
+SignalRadar es un **proyecto derivado** de `erogluyusuf/Universal-BLE-Radar`.
+
+Se mantiene la genealogía Git original de forma intencional para preservar:
+
+- autoría e historial verificables;
+- trazabilidad de los cambios;
+- comparación con el proyecto de origen;
+- cumplimiento de atribuciones y licencia aplicable.
+
+Las partes provenientes del proyecto original conservan sus atribuciones y condiciones de licencia. Consulte `LICENSE` y el historial Git para el detalle correspondiente.
 
 ---
-**Mantenimiento del fork:** JoseloFarias
+**Desarrollo y mantenimiento actual:** JoseloFarias

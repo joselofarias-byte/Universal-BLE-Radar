@@ -1,63 +1,39 @@
-# Sentinel: Advanced BLE Signal Intelligence & Tracking System
+# SignalRadar / Universal BLE Radar — JoseloFarias fork
 
-![Project Status](https://img.shields.io/badge/Status-Stable-success)
-![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue)
-![License](https://img.shields.io/badge/License-MIT-purple)
+Proyecto Android/Flutter mantenido por **JoseloFarias** para detección, análisis y localización heurística de dispositivos Bluetooth Low Energy mediante intensidad de señal y sensores del teléfono.
 
-**Sentinel** is a high-performance mobile security utility designed for real-time detection, analysis, and tracking of Bluetooth Low Energy (BLE) devices. Unlike standard scanners, Sentinel leverages sensor fusion algorithms (RSSI + Accelerometer + Magnetometer) to provide heuristic directional tracking and detailed signal forensics without requiring specialized hardware like UWB.
+## Meta
 
-##  Key Capabilities
+Convertir el escaneo BLE en una herramienta práctica de localización: seleccionar un objetivo, estimar proximidad y orientar al usuario mediante RSSI, rumbo y fusión de sensores sin requerir hardware UWB.
 
-###  Spectral Radar Surveillance
-* **Continuous Spectrum Scanning:** Utilizes aggressive scan modes to capture ephemeral BLE advertisements in real-time.
-* **Proximity Sorting:** Automatically categorizes devices into dynamic range zones (Immediate, Near, Far) for rapid threat assessment.
-* **Vendor Identification:** Integrated OUI database to instantly identify manufacturers (Apple, Samsung, Microsoft, Nordic, etc.) based on raw payload analysis.
+## Objetivos técnicos
 
-###  Heuristic Precision Finding
-A proprietary tracking interface designed for locating specific targets in complex environments:
-* **Dynamic Trend Analysis:** Monitors RSSI variance relative to user motion intensity to determine directionality.
-* **Haptic Feedback Loop:** Provides non-visual cues via variable-frequency vibration patterns as the signal strength increases.
-* **Logarithmic Distance Estimation:** Converts raw signal strength (dBm) into estimated physical distance using calibrated path-loss models.
+- Escaneo BLE continuo mediante una capa desacoplada.
+- Clasificación de proximidad por RSSI.
+- Suavizado y análisis de tendencia para reducir ruido.
+- Fusión de señal con magnetómetro/sensores de movimiento.
+- Radar sectorial y seguimiento de un dispositivo objetivo.
+- Feedback visual y háptico durante la búsqueda.
+- Privacidad local y ausencia de telemetría innecesaria.
 
-###  Signal Forensics
-* **Deep Packet Inspection:** Extracts and visualizes Manufacturer Specific Data, Service UUIDs, and TX Power levels.
-* **Jitter Smoothing:** Implements weighted average smoothing algorithms to stabilize signal fluctuations and eliminate noise.
+## Estado
 
-##  Technical Architecture
+**Desarrollo activo.** El objetivo es avanzar el algoritmo, la precisión y la UX de búsqueda en cada ciclo, además de mantener compatibilidad y builds.
 
-Sentinel is built on a robust, type-safe architecture ensuring performance and stability:
+## Desarrollo
 
-* **Core Framework:** Flutter & Dart (Null-Safety)
-* **Bluetooth Stack:** Low-latency interaction via `flutter_blue_plus`
-* **Sensor Fusion:** Real-time motion analysis using `sensors_plus` & `flutter_compass`
-* **UI/UX:** High-contrast "Dark Mode" interface optimized for field visibility.
-
-##  Installation & Usage
-
-### Prerequisites
-* Android 5.0+ or iOS 12.0+ device.
-* Location & Bluetooth permissions (Required for BLE scanning on Android 12+).
-
-### Building from Source
 ```bash
-git clone https://github.com/erogluyusuf/Universal-BLE-Radar.git
+git clone https://github.com/joselofarias-byte/Universal-BLE-Radar.git
 cd Universal-BLE-Radar
 flutter pub get
-flutter run --release
+flutter analyze
+flutter test
+flutter build apk
 ```
 
-### Releases
-Pre-compiled APKs are available in the `releases/` directory for immediate deployment.
+## Origen y licencia
 
-##  Disclaimer
-*Sentinel is intended for educational and legitimate security research purposes only. The developers assume no liability for misuse of this software.*
-
-##  Contribution
-Contributions are welcome. Please ensure all pull requests adhere to the existing architectural patterns and include relevant tests.
-
-##  License
-Distributed under the MIT License. See `LICENSE` for more information.
+Fork basado en `erogluyusuf/Universal-BLE-Radar`. Se conservan las atribuciones y licencia del proyecto original; consulte `LICENSE` y el historial Git.
 
 ---
-**Maintained by:** Yusuf Eroğlu
-*See beyond the signal.*
+**Mantenimiento del fork:** JoseloFarias

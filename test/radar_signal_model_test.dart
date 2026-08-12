@@ -46,5 +46,35 @@ void main() {
       accumulator.add(headingDegrees: 90, rssi: -50);
       expect(accumulator.strongestSector(), 4);
     });
+
+    test('confidence grows with samples and RSSI margin', () {
+      final accumulator = SectorRssiAccumulator(windowSize: 5, alpha: 1);
+      for (var i = 0; i < 5; i++) {
+        accumulator.add(headingDegrees: 90, rssi: -50);
+        accumulator.add(headingDegrees: 180, rssi: -62);
+      }
+
+      final estimate = accumulator.strongestEstimate();
+      expect(estimate, isNotNull);
+      expect(estimate!.sector, 4);
+      expect(estimate.sampleCount, 5);
+      expect(estimate.marginDb, 12);
+      expect(estimate.confidence, 1);
+      expect(estimate.isLockCandidate, isTrue);
+    });
+
+    test('does not lock on a narrow RSSI margin', () {
+      final accumulator = SectorRssiAccumulator(windowSize: 5, alpha: 1);
+      for (var i = 0; i < 5; i++) {
+        accumulator.add(headingDegrees: 0, rssi: -55);
+        accumulator.add(headingDegrees: 22.5, rssi: -53);
+      }
+
+      final estimate = accumulator.strongestEstimate();
+      expect(estimate, isNotNull);
+      expect(estimate!.sector, 1);
+      expect(estimate.marginDb, 2);
+      expect(estimate.isLockCandidate, isFalse);
+    });
   });
 }

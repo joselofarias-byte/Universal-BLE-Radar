@@ -16,7 +16,7 @@ class RadarPainter extends CustomPainter {
 
     // 1. Radar Halkalarını Çiz (Yeşil ve silik)
     final circlePaint = Paint()
-      ..color = const Color(0xFF00FF00).withOpacity(0.3)
+      ..color = const Color(0xFF00FF00).withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -32,7 +32,7 @@ class RadarPainter extends CustomPainter {
         endAngle: pi * 2,
         colors: [
           Colors.transparent,
-          const Color(0xFF00FF00).withOpacity(0.5),
+          const Color(0xFF00FF00).withValues(alpha: 0.5),
         ],
         stops: const [0.7, 1.0],
         transform: GradientRotation(animation.value * pi * 2),
@@ -48,7 +48,7 @@ class RadarPainter extends CustomPainter {
       // -100 dBm (Uzak) -> 1.0 (Dış halka)
       // -30 dBm (Yakın) -> 0.0 (Merkez)
       double distanceFactor = ((result.rssi.abs() - 30) / 70).clamp(0.0, 1.0);
-      
+
       // Rastgele bir açı ata (Cihazın gerçek yönünü bilemeyiz, sadece mesafeyi biliriz)
       // Sabit kalması için cihaz ID'sinin hash'ini kullanıyoruz
       final angle = (result.device.remoteId.str.hashCode % 360) * (pi / 180);
@@ -57,13 +57,13 @@ class RadarPainter extends CustomPainter {
       final deviceY = center.dy + (radius * distanceFactor) * sin(angle);
 
       // Cihazın rengini ayarla (İsimliyse Mavi, değilse Kırmızı)
-      devicePaint.color = result.device.platformName.isNotEmpty 
-          ? Colors.cyanAccent 
+      devicePaint.color = result.device.platformName.isNotEmpty
+          ? Colors.cyanAccent
           : Colors.redAccent;
 
       canvas.drawCircle(Offset(deviceX, deviceY), 6, devicePaint);
     }
-    
+
     // 4. Merkezi (Sen) Çiz
     canvas.drawCircle(center, 5, Paint()..color = Colors.white);
   }

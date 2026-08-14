@@ -149,7 +149,7 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
   void _triggerHaptic(int duration) async {
     if (_feedbackTimer != null && _feedbackTimer!.isActive) return;
     _feedbackTimer = Timer(const Duration(milliseconds: 600), () async {
-      if (await Vibration.hasVibrator() ?? false) Vibration.vibrate(duration: duration);
+      if (await Vibration.hasVibrator()) Vibration.vibrate(duration: duration);
     });
   }
 
@@ -203,7 +203,6 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // DÜZELTME: const kaldırıldı
                       Text("Sentinel", style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: kTextPrimary)),
                       _isScanning
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: kPrimaryGreen))
@@ -231,7 +230,6 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  // DÜZELTME: const kaldırıldı
                   child: Text("DİĞER SİNYALLER", style: TextStyle(color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 10),
@@ -264,7 +262,6 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
             child: const Icon(Icons.radar, color: kPrimaryGreen),
           ),
           const SizedBox(height: 8),
-          // DÜZELTME: const kaldırıldı
           Text(_getName(r), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: kTextPrimary)),
         ]),
       ),
@@ -297,7 +294,8 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
 
   Widget _buildFinderScreen() {
     final currentMatch = _scanResults.firstWhere(
-            (r) => r.device.remoteId == _targetDevice?.device.remoteId, orElse: () => _targetDevice!
+      (r) => r.device.remoteId == _targetDevice?.device.remoteId,
+      orElse: () => _targetDevice!,
     );
     double dist = _calculateDistance(_smoothedRssi);
     String distStr = dist < 0.5 ? "0.1m" : "${dist.toStringAsFixed(1)}m";
@@ -305,6 +303,7 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
     String mac = currentMatch.device.remoteId.str;
     String uuids = currentMatch.advertisementData.serviceUuids.join(", ");
     if (uuids.isEmpty) uuids = "Yok";
+    final headingText = _heading == null ? "N/A" : "${_heading!.toStringAsFixed(1)}°";
 
     return Container(
       color: Colors.black,
@@ -325,7 +324,6 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                     },
                   ),
                   Column(children: [
-                    // DÜZELTME: const kaldırıldı
                     Text("HEDEF", style: TextStyle(color: kTextSecondary, fontSize: 10, letterSpacing: 2)),
                     Text(_getName(currentMatch), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
                   ]),
@@ -338,9 +336,9 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _directionColor.withOpacity(0.1),
-                  border: Border.all(color: _directionColor, width: 2)
+                shape: BoxShape.circle,
+                color: _directionColor.withValues(alpha: 0.1),
+                border: Border.all(color: _directionColor, width: 2),
               ),
               padding: const EdgeInsets.all(40),
               child: Icon(_directionIcon, size: 120, color: _directionColor),
@@ -362,6 +360,7 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                 const Divider(color: Colors.white10),
                 _buildRow("MAC", mac),
                 _buildRow("RSSI", "${currentMatch.rssi} dBm"),
+                _buildRow("HEADING", headingText),
                 _buildRow("UUIDs", uuids),
               ]),
             ),
@@ -373,7 +372,6 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
 
   Widget _buildRow(String label, String val) {
     return Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      // DÜZELTME: const kaldırıldı
       Text(label, style: TextStyle(color: kTextSecondary, fontSize: 12)),
       Expanded(child: Text(val, textAlign: TextAlign.end, style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace'), overflow: TextOverflow.ellipsis)),
     ]));

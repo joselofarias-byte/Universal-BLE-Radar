@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 enum ProximityBand {
   veryClose,
   close,
@@ -50,6 +52,48 @@ class RadarMath {
   }
 }
 
+class CircularHeadingFilter {
+  CircularHeadingFilter({this.alpha = 0.25}) {
+    if (alpha <= 0 || alpha > 1) {
+      throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
+    }
+  }
+
+  final double alpha;
+  double? _x;
+  double? _y;
+
+  double add(double headingDegrees) {
+    RadarMath.requireFinite(headingDegrees, 'headingDegrees');
+    final normalized = ((headingDegrees % 360) + 360) % 360;
+    final radians = normalized * math.pi / 180.0;
+    final sampleX = math.cos(radians);
+    final sampleY = math.sin(radians);
+
+    if (_x == null || _y == null) {
+      _x = sampleX;
+      _y = sampleY;
+    } else {
+      _x = RadarMath.ema(_x!, sampleX, alpha: alpha);
+      _y = RadarMath.ema(_y!, sampleY, alpha: alpha);
+    }
+
+    final magnitude = math.sqrt(_x! * _x! + _y! * _y!);
+    if (magnitude < 1e-9) {
+      _x = sampleX;
+      _y = sampleY;
+    }
+
+    final filtered = math.atan2(_y!, _x!) * 180.0 / math.pi;
+    return (filtered + 360.0) % 360.0;
+  }
+
+  void reset() {
+    _x = null;
+    _y = null;
+  }
+}
+
 class SectorEstimate {
   const SectorEstimate({
     required this.sector,
@@ -72,7 +116,8 @@ class SectorRssiAccumulator {
   SectorRssiAccumulator({
     this.alpha = RadarMath.defaultEmaAlpha,
     this.windowSize = 25,
-  }) {
+    double headingAlpha = 0.25,
+  }) : _headingFilter = CircularHeadingFilter(alpha: headingAlpha) {
     if (alpha <= 0 || alpha > 1) {
       throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
     }
@@ -83,13 +128,15 @@ class SectorRssiAccumulator {
 
   final double alpha;
   final int windowSize;
+  final CircularHeadingFilter _headingFilter;
   final List<List<int>> _windows =
       List.generate(RadarMath.sectorCount, (_) => <int>[]);
   final List<double?> _ema =
       List<double?>.filled(RadarMath.sectorCount, null);
 
   void add({required double headingDegrees, required int rssi}) {
-    final sector = RadarMath.sectorForHeading(headingDegrees);
+    final filteredHeading = _headingFilter.add(headingDegrees);
+    final sector = RadarMath.sectorForHeading(filteredHeading);
     final window = _windows[sector];
     window.add(rssi);
     if (window.length > windowSize) {

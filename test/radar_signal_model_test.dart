@@ -29,6 +29,23 @@ void main() {
     });
   });
 
+  group('CircularHeadingFilter', () {
+    test('smooths through the 359 to 0 degree wrap', () {
+      final filter = CircularHeadingFilter(alpha: 0.5);
+      final first = filter.add(359);
+      final second = filter.add(1);
+
+      expect(RadarMath.angularDelta(first, 359), lessThan(0.01));
+      expect(RadarMath.angularDelta(second, 0), lessThan(0.1));
+    });
+
+    test('rejects invalid alpha and non-finite headings', () {
+      expect(() => CircularHeadingFilter(alpha: 0), throwsArgumentError);
+      final filter = CircularHeadingFilter();
+      expect(() => filter.add(double.nan), throwsArgumentError);
+    });
+  });
+
   group('SectorRssiAccumulator', () {
     test('keeps bounded window and EMA', () {
       final accumulator = SectorRssiAccumulator(windowSize: 2, alpha: 0.5);

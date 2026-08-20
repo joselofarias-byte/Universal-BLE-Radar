@@ -116,8 +116,7 @@ class SectorRssiAccumulator {
   SectorRssiAccumulator({
     this.alpha = RadarMath.defaultEmaAlpha,
     this.windowSize = 25,
-    double headingAlpha = 0.25,
-  }) : _headingFilter = CircularHeadingFilter(alpha: headingAlpha) {
+  }) {
     if (alpha <= 0 || alpha > 1) {
       throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
     }
@@ -128,15 +127,13 @@ class SectorRssiAccumulator {
 
   final double alpha;
   final int windowSize;
-  final CircularHeadingFilter _headingFilter;
   final List<List<int>> _windows =
       List.generate(RadarMath.sectorCount, (_) => <int>[]);
   final List<double?> _ema =
       List<double?>.filled(RadarMath.sectorCount, null);
 
   void add({required double headingDegrees, required int rssi}) {
-    final filteredHeading = _headingFilter.add(headingDegrees);
-    final sector = RadarMath.sectorForHeading(filteredHeading);
+    final sector = RadarMath.sectorForHeading(headingDegrees);
     final window = _windows[sector];
     window.add(rssi);
     if (window.length > windowSize) {

@@ -13,6 +13,14 @@ void main() {
       expect(RadarMath.proximityForRssi(-90), ProximityBand.distant);
       expect(RadarMath.proximityForRssi(-91), ProximityBand.veryDistant);
     });
+
+    test('recognizes plausible BLE RSSI values', () {
+      expect(RadarMath.isPlausibleRssi(-127), isTrue);
+      expect(RadarMath.isPlausibleRssi(-1), isTrue);
+      expect(RadarMath.isPlausibleRssi(-128), isFalse);
+      expect(RadarMath.isPlausibleRssi(0), isFalse);
+      expect(RadarMath.isPlausibleRssi(20), isFalse);
+    });
   });
 
   group('RadarMath sectors', () {
@@ -55,6 +63,20 @@ void main() {
 
       expect(accumulator.samplesForSector(0), [-60, -40]);
       expect(accumulator.emaForSector(0), -55);
+    });
+
+    test('ignores implausible RSSI without contaminating sector state', () {
+      final accumulator = SectorRssiAccumulator(windowSize: 3, alpha: 1);
+
+      expect(accumulator.add(headingDegrees: 90, rssi: 0), isFalse);
+      expect(accumulator.add(headingDegrees: 90, rssi: -128), isFalse);
+      expect(accumulator.samplesForSector(4), isEmpty);
+      expect(accumulator.emaForSector(4), isNull);
+      expect(accumulator.strongestEstimate(), isNull);
+
+      expect(accumulator.add(headingDegrees: 90, rssi: -55), isTrue);
+      expect(accumulator.samplesForSector(4), [-55]);
+      expect(accumulator.emaForSector(4), -55);
     });
 
     test('finds strongest sector', () {

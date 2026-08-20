@@ -225,6 +225,16 @@ class SectorRssiAccumulator {
     );
   }
 
+  void reset() {
+    for (final window in _windows) {
+      window.clear();
+    }
+    for (var i = 0; i < _ema.length; i++) {
+      _ema[i] = null;
+    }
+    _headingFilter.reset();
+  }
+
   void _validateSector(int sector) {
     if (sector < 0 || sector >= RadarMath.sectorCount) {
       throw RangeError.range(sector, 0, RadarMath.sectorCount - 1, 'sector');

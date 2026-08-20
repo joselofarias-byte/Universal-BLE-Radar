@@ -115,5 +115,28 @@ void main() {
       expect(estimate.marginDb, 2);
       expect(estimate.isLockCandidate, isFalse);
     });
+
+    test('reset clears samples, EMA, estimate and heading history', () {
+      final accumulator = SectorRssiAccumulator(
+        windowSize: 3,
+        alpha: 1,
+        headingAlpha: 0.5,
+      );
+      accumulator.add(headingDegrees: 359, rssi: -70);
+      accumulator.add(headingDegrees: 1, rssi: -60);
+
+      expect(accumulator.strongestEstimate(), isNotNull);
+
+      accumulator.reset();
+
+      for (var sector = 0; sector < RadarMath.sectorCount; sector++) {
+        expect(accumulator.samplesForSector(sector), isEmpty);
+        expect(accumulator.emaForSector(sector), isNull);
+      }
+      expect(accumulator.strongestEstimate(), isNull);
+
+      accumulator.add(headingDegrees: 90, rssi: -50);
+      expect(accumulator.samplesForSector(4), [-50]);
+    });
   });
 }

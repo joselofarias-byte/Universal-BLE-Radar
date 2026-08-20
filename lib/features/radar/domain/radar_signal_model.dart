@@ -12,6 +12,11 @@ class RadarMath {
   static const int sectorCount = 16;
   static const double sectorSizeDegrees = 360 / sectorCount;
   static const double defaultEmaAlpha = 0.3;
+  static const int minPlausibleRssi = -127;
+  static const int maxPlausibleRssi = -1;
+
+  static bool isPlausibleRssi(int rssi) =>
+      rssi >= minPlausibleRssi && rssi <= maxPlausibleRssi;
 
   static ProximityBand proximityForRssi(int rssi) {
     if (rssi >= -45) return ProximityBand.veryClose;
@@ -159,7 +164,11 @@ class SectorRssiAccumulator {
   final List<double?> _ema =
       List<double?>.filled(RadarMath.sectorCount, null);
 
-  void add({required double headingDegrees, required int rssi}) {
+  bool add({required double headingDegrees, required int rssi}) {
+    if (!RadarMath.isPlausibleRssi(rssi)) {
+      return false;
+    }
+
     final filteredHeading = _headingFilter.add(headingDegrees);
     final sector = RadarMath.sectorForHeading(filteredHeading);
     final window = _windows[sector];
@@ -171,6 +180,7 @@ class SectorRssiAccumulator {
     _ema[sector] = previous == null
         ? rssi.toDouble()
         : RadarMath.ema(previous, rssi.toDouble(), alpha: alpha);
+    return true;
   }
 
   double? emaForSector(int sector) {

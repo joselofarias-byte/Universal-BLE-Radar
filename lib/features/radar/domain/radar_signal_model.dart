@@ -53,19 +53,39 @@ class RadarMath {
 }
 
 class CircularHeadingFilter {
-  CircularHeadingFilter({this.alpha = 0.25}) {
+  CircularHeadingFilter({
+    this.alpha = 0.25,
+    this.jumpResetDegrees = 8.0,
+  }) {
     if (alpha <= 0 || alpha > 1) {
       throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
+    }
+    if (jumpResetDegrees <= 0 || jumpResetDegrees > 180) {
+      throw ArgumentError.value(
+        jumpResetDegrees,
+        'jumpResetDegrees',
+        'Debe estar en (0, 180].',
+      );
     }
   }
 
   final double alpha;
+  final double jumpResetDegrees;
   double? _x;
   double? _y;
+  double? _lastRawHeading;
 
   double add(double headingDegrees) {
     RadarMath.requireFinite(headingDegrees, 'headingDegrees');
     final normalized = ((headingDegrees % 360) + 360) % 360;
+    final lastRaw = _lastRawHeading;
+    if (lastRaw != null &&
+        RadarMath.angularDelta(normalized, lastRaw) > jumpResetDegrees) {
+      _x = null;
+      _y = null;
+    }
+    _lastRawHeading = normalized;
+
     final radians = normalized * math.pi / 180.0;
     final sampleX = math.cos(radians);
     final sampleY = math.sin(radians);
@@ -91,6 +111,7 @@ class CircularHeadingFilter {
   void reset() {
     _x = null;
     _y = null;
+    _lastRawHeading = null;
   }
 }
 
@@ -116,7 +137,12 @@ class SectorRssiAccumulator {
   SectorRssiAccumulator({
     this.alpha = RadarMath.defaultEmaAlpha,
     this.windowSize = 25,
-  }) {
+    double headingAlpha = 0.25,
+    double headingJumpResetDegrees = 8.0,
+  }) : _headingFilter = CircularHeadingFilter(
+          alpha: headingAlpha,
+          jumpResetDegrees: headingJumpResetDegrees,
+        ) {
     if (alpha <= 0 || alpha > 1) {
       throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
     }
@@ -127,13 +153,15 @@ class SectorRssiAccumulator {
 
   final double alpha;
   final int windowSize;
+  final CircularHeadingFilter _headingFilter;
   final List<List<int>> _windows =
       List.generate(RadarMath.sectorCount, (_) => <int>[]);
   final List<double?> _ema =
       List<double?>.filled(RadarMath.sectorCount, null);
 
   void add({required double headingDegrees, required int rssi}) {
-    final sector = RadarMath.sectorForHeading(headingDegrees);
+    final filteredHeading = _headingFilter.add(headingDegrees);
+    final sector = RadarMath.sectorForHeading(filteredHeading);
     final window = _windows[sector];
     window.add(rssi);
     if (window.length > windowSize) {

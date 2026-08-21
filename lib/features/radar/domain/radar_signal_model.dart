@@ -197,10 +197,10 @@ class SectorRssiAccumulator {
 
   SectorEstimate? strongestEstimate() {
     final ranked = <({int sector, double rssi})>[];
-    for (var i = 0; i < _ema.length; i++) {
-      final value = _ema[i];
-      if (value != null) {
-        ranked.add((sector: i, rssi: value));
+    for (var sector = 0; sector < _windows.length; sector++) {
+      final samples = _windows[sector];
+      if (samples.isNotEmpty) {
+        ranked.add((sector: sector, rssi: _median(samples)));
       }
     }
     if (ranked.isEmpty) return null;
@@ -233,6 +233,13 @@ class SectorRssiAccumulator {
       _ema[i] = null;
     }
     _headingFilter.reset();
+  }
+
+  double _median(List<int> samples) {
+    final sorted = List<int>.of(samples)..sort();
+    final middle = sorted.length ~/ 2;
+    if (sorted.length.isOdd) return sorted[middle].toDouble();
+    return (sorted[middle - 1] + sorted[middle]) / 2.0;
   }
 
   void _validateSector(int sector) {

@@ -64,7 +64,7 @@ class _RadarScreenState extends State<RadarScreen> {
   String _directionText = 'Muévete para comparar la señal';
   double _motionIntensity = 0;
   RadarGuidance? _guidance;
-  SectorRssiAccumulator _sectorAccumulator = SectorRssiAccumulator();
+  final SectorRssiAccumulator _sectorAccumulator = SectorRssiAccumulator();
   TargetPresenceTracker _presenceTracker = TargetPresenceTracker();
 
   final Map<int, String> _vendorMap = {
@@ -115,8 +115,10 @@ class _RadarScreenState extends State<RadarScreen> {
   }
 
   void _updateTracking(ScanResult result) {
-    final now = DateTime.now();
     final currentRssi = result.rssi;
+    if (!RadarMath.isPlausibleRssi(currentRssi)) return;
+
+    final now = DateTime.now();
     _presenceTracker.markSeen(now);
 
     if (_smoothedRssi == -100) _smoothedRssi = currentRssi.toDouble();
@@ -358,7 +360,7 @@ class _RadarScreenState extends State<RadarScreen> {
       _smoothedRssi = -100;
       _lastRssi = -100;
       _guidance = null;
-      _sectorAccumulator = SectorRssiAccumulator();
+      _sectorAccumulator.reset();
       _presenceTracker = TargetPresenceTracker();
       _directionText = 'Muévete y gira para comparar sectores';
       _directionColor = kNeutralGrey;

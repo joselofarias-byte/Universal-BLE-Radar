@@ -14,8 +14,9 @@ extension RobustSectorRanking on SectorRssiAccumulator {
 
     ranked.sort((a, b) => b.rssi.compareTo(a.rssi));
     final best = ranked.first;
-    final second = ranked.length > 1 ? ranked[1].rssi : best.rssi - 12.0;
-    final marginDb = (best.rssi - second).clamp(0.0, 12.0);
+    final marginDb = ranked.length > 1
+        ? (best.rssi - ranked[1].rssi).clamp(0.0, 12.0)
+        : 0.0;
     final sampleCount = samplesForSector(best.sector).length;
     final sampleConfidence = (sampleCount / windowSize).clamp(0.0, 1.0);
     final marginConfidence = (marginDb / 6.0).clamp(0.0, 1.0);

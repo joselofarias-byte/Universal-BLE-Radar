@@ -11,6 +11,7 @@ import 'package:vibration/vibration.dart';
 
 import 'features/radar/domain/radar_guidance.dart';
 import 'features/radar/domain/radar_signal_model.dart';
+import 'features/radar/domain/robust_sector_ranking.dart';
 import 'features/radar/domain/target_presence_tracker.dart';
 
 const Color kBgColor = Color(0xFF000000);
@@ -128,7 +129,7 @@ class _RadarScreenState extends State<RadarScreen> {
     if (heading != null && heading.isFinite) {
       _sectorAccumulator.add(headingDegrees: heading, rssi: currentRssi);
       _guidance = RadarGuidance.evaluate(
-        estimate: _sectorAccumulator.strongestEstimate(),
+        estimate: _sectorAccumulator.robustStrongestEstimate(),
         presence: _presenceTracker.stateAt(now),
         currentHeadingDegrees: heading,
       );

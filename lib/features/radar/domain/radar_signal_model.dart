@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 enum ProximityBand {
   veryClose,
   close,
@@ -10,6 +12,11 @@ class RadarMath {
   static const int sectorCount = 16;
   static const double sectorSizeDegrees = 360 / sectorCount;
   static const double defaultEmaAlpha = 0.3;
+  static const int minPlausibleRssi = -127;
+  static const int maxPlausibleRssi = -1;
+
+  static bool isPlausibleRssi(int rssi) =>
+      rssi >= minPlausibleRssi && rssi <= maxPlausibleRssi;
 
   static ProximityBand proximityForRssi(int rssi) {
     if (rssi >= -45) return ProximityBand.veryClose;
@@ -50,6 +57,69 @@ class RadarMath {
   }
 }
 
+class CircularHeadingFilter {
+  CircularHeadingFilter({
+    this.alpha = 0.25,
+    this.jumpResetDegrees = 8.0,
+  }) {
+    if (alpha <= 0 || alpha > 1) {
+      throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
+    }
+    if (jumpResetDegrees <= 0 || jumpResetDegrees > 180) {
+      throw ArgumentError.value(
+        jumpResetDegrees,
+        'jumpResetDegrees',
+        'Debe estar en (0, 180].',
+      );
+    }
+  }
+
+  final double alpha;
+  final double jumpResetDegrees;
+  double? _x;
+  double? _y;
+  double? _lastRawHeading;
+
+  double add(double headingDegrees) {
+    RadarMath.requireFinite(headingDegrees, 'headingDegrees');
+    final normalized = ((headingDegrees % 360) + 360) % 360;
+    final lastRaw = _lastRawHeading;
+    if (lastRaw != null &&
+        RadarMath.angularDelta(normalized, lastRaw) > jumpResetDegrees) {
+      _x = null;
+      _y = null;
+    }
+    _lastRawHeading = normalized;
+
+    final radians = normalized * math.pi / 180.0;
+    final sampleX = math.cos(radians);
+    final sampleY = math.sin(radians);
+
+    if (_x == null || _y == null) {
+      _x = sampleX;
+      _y = sampleY;
+    } else {
+      _x = RadarMath.ema(_x!, sampleX, alpha: alpha);
+      _y = RadarMath.ema(_y!, sampleY, alpha: alpha);
+    }
+
+    final magnitude = math.sqrt(_x! * _x! + _y! * _y!);
+    if (magnitude < 1e-9) {
+      _x = sampleX;
+      _y = sampleY;
+    }
+
+    final filtered = math.atan2(_y!, _x!) * 180.0 / math.pi;
+    return (filtered + 360.0) % 360.0;
+  }
+
+  void reset() {
+    _x = null;
+    _y = null;
+    _lastRawHeading = null;
+  }
+}
+
 class SectorEstimate {
   const SectorEstimate({
     required this.sector,
@@ -72,7 +142,12 @@ class SectorRssiAccumulator {
   SectorRssiAccumulator({
     this.alpha = RadarMath.defaultEmaAlpha,
     this.windowSize = 25,
-  }) {
+    double headingAlpha = 0.25,
+    double headingJumpResetDegrees = 8.0,
+  }) : _headingFilter = CircularHeadingFilter(
+          alpha: headingAlpha,
+          jumpResetDegrees: headingJumpResetDegrees,
+        ) {
     if (alpha <= 0 || alpha > 1) {
       throw ArgumentError.value(alpha, 'alpha', 'Debe estar en (0, 1].');
     }
@@ -83,13 +158,19 @@ class SectorRssiAccumulator {
 
   final double alpha;
   final int windowSize;
+  final CircularHeadingFilter _headingFilter;
   final List<List<int>> _windows =
       List.generate(RadarMath.sectorCount, (_) => <int>[]);
   final List<double?> _ema =
       List<double?>.filled(RadarMath.sectorCount, null);
 
-  void add({required double headingDegrees, required int rssi}) {
-    final sector = RadarMath.sectorForHeading(headingDegrees);
+  bool add({required double headingDegrees, required int rssi}) {
+    if (!RadarMath.isPlausibleRssi(rssi)) {
+      return false;
+    }
+
+    final filteredHeading = _headingFilter.add(headingDegrees);
+    final sector = RadarMath.sectorForHeading(filteredHeading);
     final window = _windows[sector];
     window.add(rssi);
     if (window.length > windowSize) {
@@ -99,6 +180,7 @@ class SectorRssiAccumulator {
     _ema[sector] = previous == null
         ? rssi.toDouble()
         : RadarMath.ema(previous, rssi.toDouble(), alpha: alpha);
+    return true;
   }
 
   double? emaForSector(int sector) {
@@ -141,6 +223,16 @@ class SectorRssiAccumulator {
       sampleCount: sampleCount,
       marginDb: marginDb,
     );
+  }
+
+  void reset() {
+    for (final window in _windows) {
+      window.clear();
+    }
+    for (var i = 0; i < _ema.length; i++) {
+      _ema[i] = null;
+    }
+    _headingFilter.reset();
   }
 
   void _validateSector(int sector) {

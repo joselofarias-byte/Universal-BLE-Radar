@@ -53,11 +53,11 @@ void main() {
     final guidance = RadarGuidance.evaluate(
       estimate: estimate(sector: 1, marginDb: 3.1),
       presence: present,
-      currentHeadingDegrees: 9,
+      currentHeadingDegrees: 9.5,
     );
 
     expect(guidance.isActionable, isTrue);
-    expect(guidance.signedDeltaDegrees, closeTo(13.5, 0.001));
+    expect(guidance.signedDeltaDegrees, closeTo(13.0, 0.001));
     expect(guidance.direction, RadarTurnDirection.aligned);
   });
 

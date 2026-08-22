@@ -49,6 +49,30 @@ void main() {
     expect(guidance.signedDeltaDegrees, closeTo(32.5, 0.001));
   });
 
+  test('widens aligned deadband when sector margin is barely actionable', () {
+    final guidance = RadarGuidance.evaluate(
+      estimate: estimate(sector: 1, marginDb: 3.1),
+      presence: present,
+      currentHeadingDegrees: 9.5,
+    );
+
+    expect(guidance.isActionable, isTrue);
+    expect(guidance.signedDeltaDegrees, closeTo(13.0, 0.001));
+    expect(guidance.direction, RadarTurnDirection.aligned);
+  });
+
+  test('keeps normal turn threshold when sector margin is strong', () {
+    final guidance = RadarGuidance.evaluate(
+      estimate: estimate(sector: 1, marginDb: 6),
+      presence: present,
+      currentHeadingDegrees: 9,
+    );
+
+    expect(guidance.isActionable, isTrue);
+    expect(guidance.signedDeltaDegrees, closeTo(13.5, 0.001));
+    expect(guidance.direction, RadarTurnDirection.right);
+  });
+
   test('gates directional advice when confidence is insufficient', () {
     final guidance = RadarGuidance.evaluate(
       estimate: estimate(sector: 4, confidence: 0.5, marginDb: 2),

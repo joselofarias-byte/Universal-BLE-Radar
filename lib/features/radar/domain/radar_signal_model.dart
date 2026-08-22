@@ -142,6 +142,7 @@ class SectorRssiAccumulator {
   SectorRssiAccumulator({
     this.alpha = RadarMath.defaultEmaAlpha,
     this.windowSize = 25,
+    this.sampleMaxAge = const Duration(seconds: 8),
     double headingAlpha = 0.25,
     double headingJumpResetDegrees = 8.0,
   }) : _headingFilter = CircularHeadingFilter(
@@ -154,27 +155,47 @@ class SectorRssiAccumulator {
     if (windowSize <= 0) {
       throw ArgumentError.value(windowSize, 'windowSize', 'Debe ser > 0.');
     }
+    if (sampleMaxAge <= Duration.zero) {
+      throw ArgumentError.value(
+        sampleMaxAge,
+        'sampleMaxAge',
+        'Debe ser > 0.',
+      );
+    }
   }
 
   final double alpha;
   final int windowSize;
+  final Duration sampleMaxAge;
   final CircularHeadingFilter _headingFilter;
   final List<List<int>> _windows =
       List.generate(RadarMath.sectorCount, (_) => <int>[]);
+  final List<List<DateTime>> _observedAt =
+      List.generate(RadarMath.sectorCount, (_) => <DateTime>[]);
   final List<double?> _ema =
       List<double?>.filled(RadarMath.sectorCount, null);
 
-  bool add({required double headingDegrees, required int rssi}) {
+  bool add({
+    required double headingDegrees,
+    required int rssi,
+    DateTime? observedAt,
+  }) {
     if (!RadarMath.isPlausibleRssi(rssi)) {
       return false;
     }
 
+    final timestamp = observedAt ?? DateTime.now();
+    _pruneAll(timestamp);
+
     final filteredHeading = _headingFilter.add(headingDegrees);
     final sector = RadarMath.sectorForHeading(filteredHeading);
     final window = _windows[sector];
+    final timestamps = _observedAt[sector];
     window.add(rssi);
+    timestamps.add(timestamp);
     if (window.length > windowSize) {
       window.removeAt(0);
+      timestamps.removeAt(0);
     }
     final previous = _ema[sector];
     _ema[sector] = previous == null
@@ -183,19 +204,24 @@ class SectorRssiAccumulator {
     return true;
   }
 
-  double? emaForSector(int sector) {
+  double? emaForSector(int sector, {DateTime? now}) {
     _validateSector(sector);
+    _pruneSector(sector, now ?? DateTime.now());
     return _ema[sector];
   }
 
-  List<int> samplesForSector(int sector) {
+  List<int> samplesForSector(int sector, {DateTime? now}) {
     _validateSector(sector);
+    _pruneSector(sector, now ?? DateTime.now());
     return List<int>.unmodifiable(_windows[sector]);
   }
 
-  int? strongestSector() => strongestEstimate()?.sector;
+  int? strongestSector({DateTime? now}) => strongestEstimate(now: now)?.sector;
 
-  SectorEstimate? strongestEstimate() {
+  SectorEstimate? strongestEstimate({DateTime? now}) {
+    final timestamp = now ?? DateTime.now();
+    _pruneAll(timestamp);
+
     final ranked = <({int sector, double rssi})>[];
     for (var i = 0; i < _ema.length; i++) {
       final value = _ema[i];
@@ -230,10 +256,46 @@ class SectorRssiAccumulator {
     for (final window in _windows) {
       window.clear();
     }
+    for (final timestamps in _observedAt) {
+      timestamps.clear();
+    }
     for (var i = 0; i < _ema.length; i++) {
       _ema[i] = null;
     }
     _headingFilter.reset();
+  }
+
+  void _pruneAll(DateTime now) {
+    for (var sector = 0; sector < RadarMath.sectorCount; sector++) {
+      _pruneSector(sector, now);
+    }
+  }
+
+  void _pruneSector(int sector, DateTime now) {
+    final samples = _windows[sector];
+    final timestamps = _observedAt[sector];
+    var removed = false;
+
+    while (timestamps.isNotEmpty &&
+        now.difference(timestamps.first) > sampleMaxAge) {
+      timestamps.removeAt(0);
+      samples.removeAt(0);
+      removed = true;
+    }
+
+    if (removed) {
+      _recomputeEma(sector);
+    }
+  }
+
+  void _recomputeEma(int sector) {
+    double? value;
+    for (final sample in _windows[sector]) {
+      value = value == null
+          ? sample.toDouble()
+          : RadarMath.ema(value, sample.toDouble(), alpha: alpha);
+    }
+    _ema[sector] = value;
   }
 
   void _validateSector(int sector) {

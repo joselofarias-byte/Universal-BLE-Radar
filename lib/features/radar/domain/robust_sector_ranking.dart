@@ -1,11 +1,12 @@
 import 'radar_signal_model.dart';
 
 extension RobustSectorRanking on SectorRssiAccumulator {
-  SectorEstimate? robustStrongestEstimate() {
+  SectorEstimate? robustStrongestEstimate({DateTime? now}) {
+    final timestamp = now ?? DateTime.now();
     final ranked = <({int sector, double rssi})>[];
 
     for (var sector = 0; sector < RadarMath.sectorCount; sector++) {
-      final samples = samplesForSector(sector);
+      final samples = samplesForSector(sector, now: timestamp);
       if (samples.isEmpty) continue;
       ranked.add((sector: sector, rssi: _median(samples)));
     }
@@ -17,7 +18,7 @@ extension RobustSectorRanking on SectorRssiAccumulator {
     final marginDb = ranked.length > 1
         ? (best.rssi - ranked[1].rssi).clamp(0.0, 12.0)
         : 0.0;
-    final sampleCount = samplesForSector(best.sector).length;
+    final sampleCount = samplesForSector(best.sector, now: timestamp).length;
     final sampleConfidence = (sampleCount / windowSize).clamp(0.0, 1.0);
     final marginConfidence = (marginDb / 6.0).clamp(0.0, 1.0);
     final confidence =

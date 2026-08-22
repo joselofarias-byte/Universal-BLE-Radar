@@ -17,6 +17,9 @@ class RadarGuidance {
     required this.confidence,
   });
 
+  static const double _maxWeakMarginDeadbandDegrees = 4.0;
+  static const double _fullMarginDb = 6.0;
+
   final RadarTurnDirection direction;
   final double? signedDeltaDegrees;
   final bool isActionable;
@@ -51,7 +54,8 @@ class RadarGuidance {
     final targetHeading = estimate.sector * RadarMath.sectorSizeDegrees;
     final delta = _signedAngularDelta(targetHeading, currentHeadingDegrees);
     final halfSector = RadarMath.sectorSizeDegrees / 2;
-    final direction = delta.abs() <= halfSector
+    final alignedTolerance = halfSector + _weakMarginDeadband(estimate.marginDb);
+    final direction = delta.abs() <= alignedTolerance
         ? RadarTurnDirection.aligned
         : delta > 0
             ? RadarTurnDirection.right
@@ -64,6 +68,11 @@ class RadarGuidance {
       proximity: proximity,
       confidence: estimate.confidence,
     );
+  }
+
+  static double _weakMarginDeadband(double marginDb) {
+    final normalizedMargin = (marginDb / _fullMarginDb).clamp(0.0, 1.0);
+    return (1.0 - normalizedMargin) * _maxWeakMarginDeadbandDegrees;
   }
 
   static double _signedAngularDelta(double target, double current) {

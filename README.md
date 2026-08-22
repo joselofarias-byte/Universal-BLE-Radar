@@ -13,16 +13,19 @@ Convertir el escaneo BLE en una herramienta práctica de localización: seleccio
 - Escaneo BLE continuo mediante una capa desacoplada.
 - Clasificación de proximidad por RSSI.
 - Suavizado EMA y análisis de tendencia para reducir ruido.
+- Ranking robusto por mediana para resistir picos RSSI transitorios.
 - Radar sectorial de 16 sectores de 22,5°.
-- Ventana de muestras por sector y selección de señal dominante.
+- Ventanas temporales de muestras por sector con expiración de evidencia antigua.
+- Confianza direccional basada en comparación real entre sectores; un único sector no puede producir lock.
+- Deadband adaptativo para reducir oscilaciones izquierda/derecha cuando la evidencia entre sectores es débil.
 - Fusión de señal con magnetómetro y sensores de movimiento.
-- Seguimiento de un dispositivo objetivo.
+- Seguimiento de un dispositivo objetivo con reset limpio al cambiar de objetivo.
 - Feedback visual y háptico durante la búsqueda.
 - Privacidad local y ausencia de telemetría innecesaria.
 
 ## Estado
 
-**Desarrollo activo.** SignalRadar ya incorpora lógica propia de radar sectorial, clasificación de proximidad y procesamiento de señal, y continúa avanzando en precisión, fusión de sensores, UX y validación sobre dispositivos reales.
+**Desarrollo activo.** SignalRadar ya incorpora lógica propia de radar sectorial, ranking robusto por mediana, expiración de muestras antiguas, control de confianza direccional y estabilización cerca de límites de sector. Continúa avanzando en precisión, fusión de sensores, UX y validación sobre dispositivos reales.
 
 La CI valida análisis estático, tests y generación de APK Android.
 
